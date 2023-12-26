@@ -1,0 +1,28 @@
+services:
+  datasource:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: datasource
+    restart: always
+    environment:
+      - MSSQL_SA_PASSWORD=aA@123456
+      - ACCEPT_EULA=Y
+    ports:
+      - 1401:1433
+
+  # App backend service
+  nodejs-server:
+    # Configuration for building the docker image for the backend service
+    container_name: app-server
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      - datasource # This service depends on mssql. Start that first.
+    environment: # Pass environment variables to the service
+      - SQL_SERVER=datasource
+      - SQL_DATABASE=NodeJS
+      - SQL_PASSWORD=aA@123456
+      - SQL_USER=SA

@@ -1,0 +1,24 @@
+.category-wrapper {
+    padding: 30px;
+    .title {
+        font-size: 30px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(20, 99, 177);
+    }
+    .category {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        max-width: 2000px;
+        margin: 0 auto;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .category-wrapper .category {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
