@@ -1,105 +1,120 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaComments } from "react-icons/fa";
-import { Rnd } from "react-rnd";
+import { FaComments, FaTimes } from "react-icons/fa";
+import { Resizable } from "react-resizable";
+import Draggable from "react-draggable";
 
 const ChatComponent = () => {
-  const [showChat, setShowChat] = useState(false);
-  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatPosition, setChatPosition] = useState({ x: 0, y: 0 });
   const [chatSize, setChatSize] = useState({ width: 300, height: 400 });
-  const containerRef = useRef(null);
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
+  const chatRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
-    if (containerRef.current) {
-      const { clientWidth, clientHeight } = containerRef.current;
-      const initialX = clientWidth - 100;
-      const initialY = clientHeight - 100;
-      setButtonPosition({ x: initialX, y: initialY });
-      setChatPosition({ x: initialX - 200, y: initialY - 300 });
-    }
-  }, []);
+    const updatePositions = () => {
+      if (chatRef.current) {
+        const rect = chatRef.current.getBoundingClientRect();
+        setChatPosition({
+          x: Math.min(window.innerWidth - rect.width, Math.max(0, chatPosition.x)),
+          y: Math.min(window.innerHeight - rect.height, Math.max(0, chatPosition.y)),
+        });
+      }
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setButtonPosition({
+          x: Math.min(window.innerWidth - rect.width, Math.max(0, buttonPosition.x)),
+          y: Math.min(window.innerHeight - rect.height, Math.max(0, buttonPosition.y)),
+        });
+      }
+    };
 
-  const toggleChat = () => {
-    setShowChat(!showChat);
+    window.addEventListener("resize", updatePositions);
+    return () => window.removeEventListener("resize", updatePositions);
+  }, [chatPosition, buttonPosition]);
+
+  const handleResize = (e, { size }) => {
+    setChatSize({ width: size.width, height: size.height });
   };
 
-  const handleButtonDrag = (e, d) => {
-    setButtonPosition({ x: d.x, y: d.y });
-  };
-
-  const handleChatDrag = (e, d) => {
-    setChatPosition({ x: d.x, y: d.y });
-  };
-
-  const handleChatResize = (e, direction, ref, delta, position) => {
-    setChatSize({
-      width: ref.style.width,
-      height: ref.style.height,
+  const handleDrag = (e, ui) => {
+    setChatPosition({
+      x: ui.x,
+      y: ui.y,
     });
-    setChatPosition(position);
+  };
+
+  const handleButtonDrag = (e, ui) => {
+    setButtonPosition({
+      x: ui.x,
+      y: ui.y,
+    });
   };
 
   return (
-    <div ref={containerRef} className="relative w-full h-screen overflow-hidden">
-      {!showChat && (
-        <Rnd
-          default={{
-            x: buttonPosition.x,
-            y: buttonPosition.y,
-            width: 80,
-            height: 80,
-          }}
-          minWidth={80}
-          minHeight={80}
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {!isChatOpen && (
+        <Draggable
           bounds="parent"
-          onDragStop={handleButtonDrag}
+          position={buttonPosition}
+          onDrag={handleButtonDrag}
+          nodeRef={buttonRef}
         >
           <button
-            onClick={toggleChat}
-            className="w-full h-full bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors duration-300"
+            ref={buttonRef}
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 pointer-events-auto"
+            aria-label="Start Chat"
           >
-            <FaComments className="text-2xl" />
+            <FaComments className="mr-2 inline-block" />
+            Start Chat
           </button>
-        </Rnd>
+        </Draggable>
       )}
-
-      {showChat && (
-        <Rnd
-          default={{
-            x: chatPosition.x,
-            y: chatPosition.y,
-            width: chatSize.width,
-            height: chatSize.height,
-          }}
-          minWidth={250}
-          minHeight={300}
+      {isChatOpen && (
+        <Draggable
           bounds="parent"
-          onDragStop={handleChatDrag}
-          onResize={handleChatResize}
+          position={chatPosition}
+          onDrag={handleDrag}
+          nodeRef={chatRef}
         >
-          <div className="w-full h-full bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col">
-            <div className="bg-blue-500 text-white p-4 rounded-t-lg flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Chat Window</h2>
-              <button
-                onClick={toggleChat}
-                className="text-white hover:text-gray-200 transition-colors duration-300"
-              >
-                ×
-              </button>
+          <Resizable
+            width={chatSize.width}
+            height={chatSize.height}
+            onResize={handleResize}
+            minConstraints={[200, 300]}
+            maxConstraints={[500, 600]}
+          >
+            <div
+              ref={chatRef}
+              className="bg-white rounded-lg shadow-2xl overflow-hidden pointer-events-auto"
+              style={{ width: chatSize.width, height: chatSize.height }}
+            >
+              <div className="bg-blue-500 p-4 flex justify-between items-center">
+                <h2 className="text-white font-bold">Chat Support</h2>
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="text-white hover:text-red-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 rounded"
+                  aria-label="Close chat"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="p-4 h-[calc(100%-4rem)] overflow-y-auto">
+                {/* Chat messages would go here */}
+                <p>Welcome to our chat support! How can we help you today?</p>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-100">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  aria-label="Type your message"
+                />
+              </div>
             </div>
-            <div className="flex-grow p-4 overflow-y-auto">
-              {/* Chat messages will go here */}
-              <p className="text-gray-700">Welcome to the chat! How can I help you today?</p>
-            </div>
-            <div className="p-4 border-t border-gray-200">
-              <input
-                type="text"
-                placeholder="Type your message..."
-                className="w-full p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </Rnd>
+          </Resizable>
+        </Draggable>
       )}
     </div>
   );
